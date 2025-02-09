@@ -1,23 +1,24 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-from datetime import datetime
-
-def main():
-    st.title("🔄 AI-Powered Payroll Automation System")
+if uploaded_file is not None:
+    # Read the Excel file
+    df = pd.read_excel(uploaded_file)
     
-    # File upload
-    st.subheader("Upload Payroll Data")
-    uploaded_file = st.file_uploader("Choose your Excel file", type=['xlsx', 'xls'])
+    # Display original data
+    st.subheader("Original Data Preview")
+    st.dataframe(df.head())
     
-    if uploaded_file is not None:
-        # Read the Excel file
-        df = pd.read_excel(uploaded_file)
-        
-        # Display original data
-        st.subheader("Original Data Preview")
-        st.dataframe(df.head())
-        
+    # Check column names
+    st.write("Column Names in the Uploaded File:")
+    st.write(list(df.columns))  # Display all column names for debugging
+    
+    # Ensure required columns exist
+    required_columns = ['Payroll Errors', 'Compliance Issue', 'Department', 'Gross Salary (INR)',
+                        'Query Resolution Time (hrs)', 'Payroll Query Type', 'Tax Deduction (INR)', 
+                        'Work Hours (Monthly)']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        st.error(f"The following required columns are missing: {', '.join(missing_columns)}")
+    else:
         # Analysis and Automation Options
         st.subheader("Select Automation Tasks")
         
@@ -57,66 +58,3 @@ def main():
             st.write("📝 Query Type Analysis:")
             query_analysis = df['Payroll Query Type'].value_counts()
             st.write(query_analysis)
-        
-        if st.button("🛠️ Fix Common Errors"):
-            # Create a copy of the dataframe
-            fixed_df = df.copy()
-            
-            # Fix common errors
-            # 1. Recalculate Net Salary
-            fixed_df['Net Salary (INR)'] = fixed_df['Gross Salary (INR)'] - fixed_df['Tax Deduction (INR)']
-            
-            # 2. Flag unusual work hours
-            fixed_df['Work Hours Flag'] = fixed_df['Work Hours (Monthly)'].apply(
-                lambda x: 'Check Required' if x > 200 or x < 140 else 'OK'
-            )
-            
-            # Display fixed data
-            st.write("✅ Fixed Data Preview:")
-            st.dataframe(fixed_df)
-            
-            # Download option for fixed data
-            st.download_button(
-                label="📥 Download Fixed Data",
-                data=fixed_df.to_csv(index=False).encode('utf-8'),
-                file_name=f'fixed_payroll_data_{datetime.now().strftime("%Y%m%d")}.csv',
-                mime='text/csv'
-            )
-        
-        if st.button("📊 Generate Report"):
-            # Create report
-            st.subheader("📑 Payroll Processing Report")
-            
-            # Summary statistics
-            st.write("Summary Statistics:")
-            summary_stats = {
-                "Total Employees": len(df),
-                "Total Salary Payout": f"₹{df['Gross Salary (INR)'].sum():,.2f}",
-                "Average Salary": f"₹{df['Gross Salary (INR)'].mean():,.2f}",
-                "Total Tax Deductions": f"₹{df['Tax Deduction (INR)'].sum():,.2f}",
-                "Average Resolution Time": f"{df['Query Resolution Time (hrs)'].mean():.2f} hours"
-            }
-            
-            for key, value in summary_stats.items():
-                st.write(f"**{key}:** {value}")
-            
-            # Department-wise summary
-            st.write("\nDepartment-wise Summary:")
-            dept_summary = df.groupby('Department').agg({
-                'Employee ID': 'count',
-                'Gross Salary (INR)': 'sum',
-                'Tax Deduction (INR)': 'sum'
-            })
-            st.dataframe(dept_summary)
-            
-            # Generate downloadable report
-            report_df = pd.DataFrame(summary_stats.items(), columns=['Metric', 'Value'])
-            st.download_button(
-                label="📥 Download Report",
-                data=report_df.to_csv(index=False).encode('utf-8'),
-                file_name=f'payroll_report_{datetime.now().strftime("%Y%m%d")}.csv',
-                mime='text/csv'
-            )
-
-if __name__ == "__main__":
-    main()
